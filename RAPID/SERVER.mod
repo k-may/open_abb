@@ -20,9 +20,9 @@ PERS bool frameMutex:=FALSE;
 !//PC communication
 VAR socketdev clientSocket;
 VAR socketdev serverSocket;
-VAR num instructionCode;
-VAR num params{10};
-VAR num nParams;
+PERS num instructionCode;
+PERS num params{10};
+PERS num nParams;
 
 !PERS string ipController:= "192.168.125.1"; !robot default IP
 PERS string ipController:= "127.0.0.1"; !local IP for testing in simulation
@@ -51,58 +51,6 @@ CONST num SERVER_BAD_MSG :=  0;
 CONST num SERVER_OK := 1;
 
 
-
-	
-!////////////////
-!LOCAL METHODS
-!////////////////
-
-!//Method to parse the message received from a PC
-!// If correct message, loads values on:
-!// - instructionCode.
-!// - nParams: Number of received parameters.
-!// - params{nParams}: Vector of received params.
-PROC ParseMsg(string msg)
-    !//Local variables
-    VAR bool auxOk;
-    VAR num ind:=1;
-    VAR num newInd;
-    VAR num length;
-    VAR num indParam:=1;
-    VAR string subString;
-    VAR bool end := FALSE;
-	
-    !//Find the end character
-    length := StrMatch(msg,1,"#");
-    IF length > StrLen(msg) THEN
-        !//Corrupt message
-        nParams := -1;
-    ELSE
-        !//Read Instruction code
-        newInd := StrMatch(msg,ind," ") + 1;
-        subString := StrPart(msg,ind,newInd - ind - 1);
-        auxOk:= StrToVal(subString, instructionCode);
-        IF auxOk = FALSE THEN
-            !//Impossible to read instruction code
-            nParams := -1;
-        ELSE
-            ind := newInd;
-            !//Read all instruction parameters (maximum of 8)
-            WHILE end = FALSE DO
-                newInd := StrMatch(msg,ind," ") + 1;
-                IF newInd > length THEN
-                    end := TRUE;
-                ELSE
-                    subString := StrPart(msg,ind,newInd - ind - 1);
-                    auxOk := StrToVal(subString, params{indParam});
-                    indParam := indParam + 1;
-                    ind := newInd;
-                ENDIF	   
-            ENDWHILE
-            nParams:= indParam - 1;
-        ENDIF
-    ENDIF
-ENDPROC
 
 
 !//Handshake between server and client:
@@ -167,21 +115,12 @@ PROC main()
     !//Initialization of WorkObject, Tool, Speed and Zone
     Initialize;
 
-    !//Socket connection
-    connected:=FALSE;
-    ServerCreateAndConnect ipController,serverPort;	
-    connected:=TRUE;
-    
     !//Server Loop
     WHILE TRUE DO
         !//Initialization of program flow variables
         ok:=SERVER_OK;              !//Correctness of executed instruction.
         reconnected:=FALSE;         !//Has communication dropped after receiving a command?
-        addString := "";            
-
-        !//Wait for a command
-        SocketReceive clientSocket \Str:=receivedString \Time:=WAIT_MAX;
-        ParseMsg receivedString;
+        addString := "";
 	
         !//Execution of the command
         TEST instructionCode
@@ -463,7 +402,12 @@ ERROR (LONG_JMP_ALL_ERR)
             ServerCreateAndConnect ipController,serverPort;
             reconnected:= FALSE;
             connected:= TRUE;
-            RETRY; 
+            RETRY;
+
+		ERROR (ERR_ABORT_MOTION)
+			Reset;
+			RETRY;
+
         DEFAULT:
             TPWrite "SERVER: Unknown error.";
             TPWrite "SERVER: Closing socket and restarting.";

@@ -1,8 +1,13 @@
 # open-abb-driver
 ### Control ABB robots remotely with ROS, Python, or C++
 
+## This Fork..
 
+This fork contains an interrupt concept useful for interrupting the current movement. Useful for taking more control over the robot in a non-proceedural manner.
 
+Technique was developed during a collaboration I participated in with ABB automation engineers in 2019.
+
+To enable, a digital input is required to be added to the signals within tthe controller, ```doAbortMotion``` , values  1 or 0
 ## What is it?
 open-abb-driver consists of two main parts. The first is a program which is written in the ABB robot control language, RAPID, which allows remote clients to send requests for actions (such as joint moves, cartesian moves, speed changes, etc.). The second is a series of libraries to interact with the robot from remote computers, using several different control schemes. You can use the ROS driver, which allows control using ROS services and publishers. You can also include the Python or C++ libraries to communicate with the robot directly (both located in abb_node/packages/abb_comm), and bypass ROS completely. 
 
